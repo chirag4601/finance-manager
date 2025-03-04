@@ -4,17 +4,22 @@ import prisma from "@/lib/db";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const startDate = searchParams.get("startDate") || new Date();
-  const endDate = searchParams.get("endDate") || new Date();
-  const category = searchParams.get("category") || "Others";
+  const startDate = searchParams.get("startDate");
+  const endDate = searchParams.get("endDate");
+  const category = searchParams.get("category");
 
-  const whereClause = {
-    date: {
+  const whereClause = {};
+
+  if (startDate && endDate) {
+    whereClause.date = {
       gte: new Date(startDate),
       lte: new Date(endDate),
-    },
-    category: category,
-  };
+    };
+  }
+
+  if (category) {
+    whereClause.category = category;
+  }
 
   const expenses = await prisma.expense.findMany({
     where: whereClause,
