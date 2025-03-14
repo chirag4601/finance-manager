@@ -6,6 +6,7 @@ export type Expense = {
   date: Date;
   createdAt: Date;
   updatedAt: Date;
+  username: string;
 };
 
 export type ExpenseFormInput = {

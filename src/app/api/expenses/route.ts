@@ -7,16 +7,21 @@ export async function GET(req: NextRequest) {
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
   const category = searchParams.get("category");
+  const username = searchParams.get("username");
 
-  const whereClause = {};
+  const whereClause = { username };
 
   if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    start.setHours(0);
+    end.setHours(23, 59, 59, 999);
+
     whereClause.date = {
-      gte: new Date(startDate),
-      lte: new Date(endDate),
+      gte: start,
+      lte: end,
     };
   }
-
   if (category) {
     whereClause.category = category;
   }
@@ -45,6 +50,7 @@ export async function POST(req: NextRequest) {
         amount: parseFloat(data.amount),
         category: data.category,
         description: data.description || null,
+        username: data.username,
         date: data.date,
       },
     });

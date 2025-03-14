@@ -2,26 +2,43 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-
+import UsernameModal from "@/components/UsernameModal";
 import ExpenseForm from "@/components/ExpenseForm";
 import ExpenseList from "@/components/ExpenseList";
 import ExpenseChart from "@/components/ExpenseChart";
 import DateFilter from "@/components/DateFilter";
 import { Expense, ExpenseFormInput } from "@/types";
 
+const LOCAL_STORAGE_USER_NAME_KEY = "expenseTrackerUsername";
+
 export default function Home() {
+  const [username, setUsername] = useState<string | null>(null);
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  const handleSetUsername = (name: string) => {
+    localStorage.setItem(LOCAL_STORAGE_USER_NAME_KEY, name);
+    setUsername(name);
+    setShowUsernameModal(false);
+  };
+  useEffect(() => {
+    const savedUsername = localStorage.getItem(LOCAL_STORAGE_USER_NAME_KEY);
+    if (savedUsername) setUsername(savedUsername);
+    else setShowUsernameModal(true);
+  }, []);
+
   useEffect(() => {
     const fetchExpenses = async () => {
+      if (!username) return;
+
       setIsLoading(true);
       try {
         let url = "/api/expenses";
-        const params = new URLSearchParams();
+        const params = new URLSearchParams({ username });
 
         if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
@@ -41,16 +58,18 @@ export default function Home() {
     };
 
     fetchExpenses();
-  }, [startDate, endDate]);
+  }, [username, startDate, endDate]);
 
   const handleAddExpense = async (data: ExpenseFormInput) => {
+    if (!username) return;
+
     try {
       const response = await fetch("/api/expenses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, username }),
       });
 
       if (response.ok) {
@@ -113,7 +132,9 @@ export default function Home() {
     setStartDate(start);
     setEndDate(end);
   };
-
+  if (!username || showUsernameModal) {
+    return <UsernameModal onSetUsername={handleSetUsername} />;
+  }
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -123,11 +144,19 @@ export default function Home() {
           className="px-4 py-6 sm:px-0"
         >
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-              Personal Finance Manager
-            </h1>
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                Welcome back, {username}!
+              </h1>
+              <button
+                onClick={() => setShowUsernameModal(true)}
+                className="text-indigo-600 hover:text-indigo-700 text-sm"
+              >
+                Change Name
+              </button>
+            </div>
             <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-              Track, manage, and visualize your expenses
+              Your personal expense dashboard
             </p>
           </div>
 

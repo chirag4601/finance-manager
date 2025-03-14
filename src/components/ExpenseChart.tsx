@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArcElement,
   BarElement,
@@ -15,7 +15,6 @@ import { Bar, Pie } from "react-chartjs-2";
 import { motion } from "framer-motion";
 import { Expense } from "@/types";
 
-// Register ChartJS components
 ChartJS.register(
   ArcElement,
   CategoryScale,
@@ -32,6 +31,19 @@ interface ExpenseChartProps {
 
 export default function ExpenseChart({ expenses }: ExpenseChartProps) {
   const [chartType, setChartType] = useState<"pie" | "bar">("pie");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const darkModeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      setTheme(darkModeQuery.matches ? "dark" : "light");
+
+      const handler = (e: MediaQueryListEvent) =>
+        setTheme(e.matches ? "dark" : "light");
+      darkModeQuery.addEventListener("change", handler);
+      return () => darkModeQuery.removeEventListener("change", handler);
+    }
+  }, []);
 
   // Process data for charts
   const categoryData = expenses.reduce(
@@ -48,36 +60,48 @@ export default function ExpenseChart({ expenses }: ExpenseChartProps) {
 
   const categories = Object.keys(categoryData);
   const amounts = Object.values(categoryData);
+  const total = amounts.reduce((a, b) => a + b, 0);
 
-  // Generate random colors for chart segments
-  const generateColors = (count: number) => {
-    const colors = [];
-    const transparentColors = [];
+  const generateConsistentColors = (categories: string[]) => {
+    const baseColors = [
+      { h: 210, s: 100, l: 60 }, // Blue
+      { h: 160, s: 100, l: 45 }, // Green
+      { h: 335, s: 100, l: 60 }, // Pink
+      { h: 40, s: 100, l: 50 }, // Orange
+      { h: 275, s: 100, l: 60 }, // Purple
+      { h: 190, s: 100, l: 45 }, // Teal
+      { h: 0, s: 100, l: 60 }, // Red
+      { h: 60, s: 100, l: 50 }, // Yellow
+    ];
 
-    for (let i = 0; i < count; i++) {
-      const r = Math.floor(Math.random() * 220) + 35;
-      const g = Math.floor(Math.random() * 220) + 35;
-      const b = Math.floor(Math.random() * 220) + 35;
+    return categories.map((category, index) => {
+      const baseColor = baseColors[index % baseColors.length];
+      const hueOffset =
+        (category.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) %
+          20) -
+        10;
 
-      colors.push(`rgb(${r}, ${g}, ${b})`);
-      transparentColors.push(`rgba(${r}, ${g}, ${b}, 0.2)`);
-    }
+      const luminance = theme === "dark" ? baseColor.l + 10 : baseColor.l;
 
-    return { colors, transparentColors };
+      return {
+        base: `hsl(${baseColor.h + hueOffset}, ${baseColor.s}%, ${luminance}%)`,
+        transparent: `hsla(${baseColor.h + hueOffset}, ${baseColor.s}%, ${luminance}%, 0.7)`,
+      };
+    });
   };
 
-  const { colors, transparentColors } = generateColors(categories.length);
+  const colorPalette = generateConsistentColors(categories);
+  const colors = colorPalette.map((c) => c.base);
+  const transparentColors = colorPalette.map((c) => c.transparent);
 
   const pieData = {
     labels: categories,
     datasets: [
       {
         data: amounts,
-        backgroundColor: colors,
-        borderColor: colors.map((c) =>
-          c.replace("rgb", "rgba").replace(")", ", 1)"),
-        ),
-        borderWidth: 1,
+        backgroundColor: transparentColors,
+        borderColor: colors,
+        borderWidth: 2,
       },
     ],
   };
@@ -90,108 +114,180 @@ export default function ExpenseChart({ expenses }: ExpenseChartProps) {
         data: amounts,
         backgroundColor: transparentColors,
         borderColor: colors,
-        borderWidth: 1,
+        borderWidth: 2,
+        borderRadius: 6,
       },
     ],
   };
 
-  const pieOptions = {
+  const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: "bottom" as const,
+        labels: {
+          usePointStyle: true,
+          padding: 16,
+          font: {
+            size: 12,
+            family: "'Inter', sans-serif",
+          },
+          color: theme === "dark" ? "#e4e4e7" : "#27272a",
+        },
       },
       tooltip: {
+        backgroundColor:
+          theme === "dark"
+            ? "rgba(30, 41, 59, 0.9)"
+            : "rgba(255, 255, 255, 0.9)",
+        titleColor: theme === "dark" ? "#e4e4e7" : "#27272a",
+        bodyColor: theme === "dark" ? "#e4e4e7" : "#27272a",
+        borderColor:
+          theme === "dark"
+            ? "rgba(226, 232, 240, 0.2)"
+            : "rgba(30, 41, 59, 0.2)",
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: {
+          family: "'Inter', sans-serif",
+          size: 14,
+          weight: "bold",
+        },
+        bodyFont: {
+          family: "'Inter', sans-serif",
+          size: 13,
+        },
         callbacks: {
           label: function (context) {
             const label = context.label || "";
             const value = context.raw || 0;
-            const total = context.chart.data.datasets[0].data.reduce(
-              (a: number, b: number) => a + b,
-              0,
-            );
             const percentage = Math.round((value / total) * 100);
-            return `${label}: Rs.${value.toFixed(2)} (${percentage}%)`;
+            return `${label}: ₹${value.toLocaleString("en-IN")} (${percentage}%)`;
           },
         },
       },
     },
-  };
-
-  const barOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        callbacks: {
-          label: function (context) {
-            const label = context.dataset.label || "";
-            const value = context.raw || 0;
-            return `${label}: Rs.${value.toFixed(2)}`;
-          },
-        },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: function (value) {
-            return "Rs." + value;
-          },
-        },
-      },
-    },
+    scales:
+      chartType === "bar"
+        ? {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color:
+                  theme === "dark"
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(0, 0, 0, 0.1)",
+              },
+              ticks: {
+                color: theme === "dark" ? "#e4e4e7" : "#27272a",
+                callback: function (value) {
+                  return "₹" + value.toLocaleString("en-IN");
+                },
+                font: {
+                  family: "'Inter', sans-serif",
+                },
+              },
+            },
+            x: {
+              grid: {
+                display: false,
+              },
+              ticks: {
+                color: theme === "dark" ? "#e4e4e7" : "#27272a",
+                font: {
+                  family: "'Inter', sans-serif",
+                },
+              },
+            },
+          }
+        : undefined,
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="bg-white p-6 rounded-lg shadow-md"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className={`${theme === "dark" ? "bg-gray-800 text-gray-200" : "bg-white text-gray-800"} 
+        p-6 rounded-xl shadow-lg transition-colors duration-300`}
     >
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800">
-          Expense Breakdown :: Total:{" "}
-          {amounts.reduce((a: number, b: number) => a + b, 0)}
-        </h2>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setChartType("pie")}
-            className={`px-3 py-1 rounded-md text-sm ${
-              chartType === "pie"
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h2 className="text-xl font-bold">Expense Breakdown</h2>
+          <div className="mt-1 flex items-center">
+            <span
+              className={`${theme === "dark" ? "text-emerald-400" : "text-emerald-600"} font-semibold`}
+            >
+              ₹{total.toLocaleString("en-IN")}
+            </span>
+            <span
+              className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"} text-sm ml-2`}
+            >
+              total expenses
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <div
+            className={`${theme === "dark" ? "bg-gray-700" : "bg-gray-100"} p-1 rounded-lg flex items-center`}
           >
-            Pie
-          </button>
-          <button
-            onClick={() => setChartType("bar")}
-            className={`px-3 py-1 rounded-md text-sm ${
-              chartType === "bar"
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Bar
-          </button>
+            <button
+              onClick={() => setChartType("pie")}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                chartType === "pie"
+                  ? `${theme === "dark" ? "bg-indigo-600" : "bg-indigo-500"} text-white`
+                  : `${theme === "dark" ? "text-gray-300 hover:text-gray-200" : "text-gray-600 hover:text-gray-800"}`
+              }`}
+            >
+              Pie
+            </button>
+            <button
+              onClick={() => setChartType("bar")}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                chartType === "bar"
+                  ? `${theme === "dark" ? "bg-indigo-600" : "bg-indigo-500"} text-white`
+                  : `${theme === "dark" ? "text-gray-300 hover:text-gray-200" : "text-gray-600 hover:text-gray-800"}`
+              }`}
+            >
+              Bar
+            </button>
+          </div>
         </div>
       </div>
 
       <>
         {expenses.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
-            <p>Add expenses to see your spending breakdown</p>
+          <div
+            className={`text-center py-16 ${theme === "dark" ? "text-gray-400" : "text-gray-500"} flex flex-col items-center`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mb-4 opacity-60"
+            >
+              <path d="M3 11h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V11Z" />
+              <path d="M10 9V3h4v6" />
+              <path d="M12 14v4" />
+            </svg>
+            <p className="text-lg font-medium">No expenses yet</p>
+            <p className="mt-1">Add expenses to see your spending breakdown</p>
           </div>
         ) : (
-          <div className="h-64 sm:h-80">
+          <div className="h-64 sm:h-80 mt-6">
             {chartType === "pie" ? (
-              <Pie data={pieData} options={pieOptions} />
+              <Pie data={pieData} options={chartOptions} />
             ) : (
-              <Bar data={barData} options={barOptions} />
+              <Bar data={barData} options={chartOptions} />
             )}
           </div>
         )}
