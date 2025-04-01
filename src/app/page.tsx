@@ -7,6 +7,7 @@ import ExpenseForm from "@/components/ExpenseForm";
 import ExpenseList from "@/components/ExpenseList";
 import ExpenseChart from "@/components/ExpenseChart";
 import DateFilter from "@/components/DateFilter";
+import VoiceInputExpense from "@/components/VoiceInputExpense";
 import { Expense, ExpenseFormInput } from "@/types";
 
 const LOCAL_STORAGE_USER_NAME_KEY = "expenseTrackerUsername";
@@ -19,12 +20,14 @@ export default function Home() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
 
   const handleSetUsername = (name: string) => {
     localStorage.setItem(LOCAL_STORAGE_USER_NAME_KEY, name);
     setUsername(name);
     setShowUsernameModal(false);
   };
+  
   useEffect(() => {
     const savedUsername = localStorage.getItem(LOCAL_STORAGE_USER_NAME_KEY);
     if (savedUsername) setUsername(savedUsername);
@@ -75,6 +78,7 @@ export default function Home() {
       if (response.ok) {
         const newExpense = await response.json();
         setFilteredExpenses((prev) => [newExpense, ...prev]);
+        setShowVoiceInput(false)
       }
     } catch (error) {
       console.error("Error adding expense:", error);
@@ -83,6 +87,7 @@ export default function Home() {
 
   const handleEditExpense = (expense: Expense) => {
     setEditingExpense(expense);
+    setShowVoiceInput(false);
   };
 
   const handleUpdateExpense = async (data: ExpenseFormInput) => {
@@ -132,9 +137,16 @@ export default function Home() {
     setStartDate(start);
     setEndDate(end);
   };
+  
+  const toggleVoiceInput = () => {
+    setShowVoiceInput(!showVoiceInput);
+    if (editingExpense) setEditingExpense(null);
+  };
+
   if (!username || showUsernameModal) {
     return <UsernameModal onSetUsername={handleSetUsername} />;
   }
+  
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -167,37 +179,62 @@ export default function Home() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <h2 className="text-xl font-bold text-gray-800 mb-4">
-                  {editingExpense ? "Edit Expense" : "Add New Expense"}
-                </h2>
-                <ExpenseForm
-                  onSubmit={
-                    editingExpense ? handleUpdateExpense : handleAddExpense
-                  }
-                  initialData={
-                    editingExpense
-                      ? {
-                          amount: editingExpense.amount.toString(),
-                          category: editingExpense.category,
-                          description: editingExpense.description || "",
-                          date: new Date(editingExpense.date)
-                            .toISOString()
-                            .split("T")[0],
-                        }
-                      : undefined
-                  }
-                  isEditing={!!editingExpense}
-                />
-                <>
-                  {editingExpense && (
-                    <button
-                      onClick={() => setEditingExpense(null)}
-                      className="mt-4 w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-indigo-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      Cancel Editing
-                    </button>
-                  )}
-                </>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-gray-800">
+                    {editingExpense 
+                      ? "Edit Expense" 
+                      : showVoiceInput 
+                        ? "Voice Input" 
+                        : "Add New Expense"}
+                  </h2>
+                  <button
+                    onClick={toggleVoiceInput}
+                    className={`px-3 py-1 rounded-md text-sm font-medium ${
+                      showVoiceInput
+                        ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                    }`}
+                    disabled={!!editingExpense}
+                  >
+                    {showVoiceInput ? "Use Form" : "Use Voice"}
+                  </button>
+                </div>
+                
+                {showVoiceInput ? (
+                  <VoiceInputExpense 
+                    onSubmit={handleAddExpense}
+                    onCancel={() => setShowVoiceInput(false)}
+                  />
+                ) : (
+                  <>
+                    <ExpenseForm
+                      onSubmit={
+                        editingExpense ? handleUpdateExpense : handleAddExpense
+                      }
+                      initialData={
+                        editingExpense
+                          ? {
+                              amount: editingExpense.amount.toString(),
+                              category: editingExpense.category,
+                              description: editingExpense.description || "",
+                              date: new Date(editingExpense.date)
+                                .toISOString()
+                                .split("T")[0],
+                            }
+                          : undefined
+                      }
+                      isEditing={!!editingExpense}
+                    />
+                    {editingExpense && (
+                      <button
+                        onClick={() => setEditingExpense(null)}
+                        className="mt-4 w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-indigo-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        Cancel Editing
+                      </button>
+                    )}
+                  </>
+                )}
               </motion.div>
             </div>
 
@@ -212,39 +249,37 @@ export default function Home() {
 
                 <ExpenseChart expenses={filteredExpenses} />
 
-                <>
-                  {isLoading ? (
-                    <div className="text-center py-12">
-                      <svg
-                        className="animate-spin h-8 w-8 mx-auto text-indigo-600"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      <p className="mt-2 text-gray-500">Loading expenses...</p>
-                    </div>
-                  ) : (
-                    <ExpenseList
-                      expenses={filteredExpenses}
-                      onEdit={handleEditExpense}
-                      onDelete={handleDeleteExpense}
-                    />
-                  )}
-                </>
+                {isLoading ? (
+                  <div className="text-center py-12">
+                    <svg
+                      className="animate-spin h-8 w-8 mx-auto text-indigo-600"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    <p className="mt-2 text-gray-500">Loading expenses...</p>
+                  </div>
+                ) : (
+                  <ExpenseList
+                    expenses={filteredExpenses}
+                    onEdit={handleEditExpense}
+                    onDelete={handleDeleteExpense}
+                  />
+                )}
               </motion.div>
             </div>
           </div>
