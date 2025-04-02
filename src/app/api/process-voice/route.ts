@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { CATEGORIES } from "@/types";
 
 // Initialize Google Generative AI client
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
+const genAI =  new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+
+if(!process.env.GOOGLE_API_KEY)console.error("NO GOOGLE API KEY")
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,15 +44,13 @@ export async function POST(req: NextRequest) {
       Only respond with valid JSON, no additional text.
     `;
 
-    // Call Gemini API with the correct model name
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    
-    const result = await model.generateContent({
+    const result = await genAI.models.generateContent({
+        model: "gemini-2.0-flash",
       contents: [{ parts: [{ text: prompt }] }]
     });
-    
-    const response = result.response;
-    const content = response.text();
+
+    // const response = result.response;
+    const content = result.text;
     
     if (!content) {
       throw new Error("Failed to get a response from Gemini");
