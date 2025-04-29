@@ -3,18 +3,22 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
+
+import Loader from "@/components/Loader";
 import { Expense } from "@/types";
 
 interface ExpenseListProps {
   expenses: Expense[];
   onEdit: (expense: Expense) => void;
   onDelete: (id: number) => void;
+  deletingId: number | null;
 }
 
 export default function ExpenseList({
   expenses,
   onEdit,
   onDelete,
+  deletingId,
 }: ExpenseListProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -114,15 +118,23 @@ export default function ExpenseList({
                             <button
                               onClick={() => onEdit(expense)}
                               className="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100"
+                              disabled={deletingId === expense.id}
                             >
                               Edit
                             </button>
-                            <button
-                              onClick={() => onDelete(expense.id)}
-                              className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100"
-                            >
-                              Delete
-                            </button>
+                            {deletingId === expense.id ? (
+                              <div className="px-3 py-1 bg-red-50 text-red-700 rounded-md text-sm flex items-center space-x-1">
+                                <Loader size="small" />
+                                <span>Deleting...</span>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => onDelete(expense.id)}
+                                className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100"
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
                         </motion.div>
                       )}

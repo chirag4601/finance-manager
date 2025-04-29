@@ -13,6 +13,8 @@ import {
 } from "chart.js";
 import { Bar, Pie } from "react-chartjs-2";
 import { motion } from "framer-motion";
+
+import Loader from "@/components/Loader";
 import { Expense } from "@/types";
 
 ChartJS.register(
@@ -27,9 +29,13 @@ ChartJS.register(
 
 interface ExpenseChartProps {
   expenses: Expense[];
+  isLoading: boolean;
 }
 
-export default function ExpenseChart({ expenses }: ExpenseChartProps) {
+export default function ExpenseChart({
+  expenses,
+  isLoading,
+}: ExpenseChartProps) {
   const [chartType, setChartType] = useState<"pie" | "bar">("pie");
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -220,7 +226,7 @@ export default function ExpenseChart({ expenses }: ExpenseChartProps) {
             <span
               className={`${theme === "dark" ? "text-emerald-400" : "text-emerald-600"} font-semibold`}
             >
-              ₹{total.toLocaleString("en-IN")}
+              {isLoading ? <Loader /> : `₹${total.toLocaleString("en-IN")}`}
             </span>
             <span
               className={`${theme === "dark" ? "text-gray-400" : "text-gray-500"} text-sm ml-2`}
@@ -259,7 +265,11 @@ export default function ExpenseChart({ expenses }: ExpenseChartProps) {
       </div>
 
       <>
-        {expenses.length === 0 ? (
+        {isLoading ? (
+          <div className="h-64 sm:h-80 mt-6 flex items-center justify-center">
+            <Loader size="large" text="Preparing chart data..." />
+          </div>
+        ) : expenses.length === 0 ? (
           <div
             className={`text-center py-16 ${theme === "dark" ? "text-gray-400" : "text-gray-500"} flex flex-col items-center`}
           >

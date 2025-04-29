@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ExpenseFormInput, CATEGORIES } from "@/types";
-import { speakText, stopSpeaking } from "@/utils/speechUtils";
+
+import Loader from "@/components/Loader";
+import { CATEGORIES, ExpenseFormInput } from "@/types";
+import { speakText, stopSpeaking } from "@/utils/speechUtils"; // Improved type definitions for the Web Speech API
 
 // Improved type definitions for the Web Speech API
 interface SpeechRecognitionResult {
   readonly isFinal?: boolean;
   readonly length: number;
+
   readonly [index: number]: {
     readonly transcript: string;
     readonly confidence: number;
@@ -17,6 +20,7 @@ interface SpeechRecognitionResult {
 
 interface SpeechRecognitionResultList {
   readonly length: number;
+
   readonly [index: number]: SpeechRecognitionResult;
 }
 
@@ -35,9 +39,13 @@ interface SpeechRecognition extends EventTarget {
   interimResults: boolean;
   lang: string;
   maxAlternatives: number;
+
   start(): void;
+
   stop(): void;
+
   abort(): void;
+
   onresult: ((event: SpeechRecognitionEvent) => void) | null;
   onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
   onstart: ((event: Event) => void) | null;
@@ -48,11 +56,11 @@ interface SpeechRecognition extends EventTarget {
 declare global {
   interface Window {
     SpeechRecognition?: {
-      new(): SpeechRecognition;
+      new (): SpeechRecognition;
       prototype: SpeechRecognition;
     };
     webkitSpeechRecognition?: {
-      new(): SpeechRecognition;
+      new (): SpeechRecognition;
       prototype: SpeechRecognition;
     };
   }
@@ -71,7 +79,7 @@ export default function VoiceInputExpense({
   const [transcript, setTranscript] = useState("");
   const [processing, setProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<ExpenseFormInput | null>(
-    null
+    null,
   );
   const [error, setError] = useState<string | null>(null);
   const [detectedLanguage, setDetectedLanguage] = useState<string>("en-US");
@@ -91,27 +99,33 @@ export default function VoiceInputExpense({
 
   // Get language name from code
   const getLanguageName = (code: string) => {
-    const language = supportedLanguages.find(lang => lang.code === code);
+    const language = supportedLanguages.find((lang) => lang.code === code);
     return language ? language.name : code;
   };
 
   useEffect(() => {
     // Check if browser supports SpeechRecognition
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      setError("Your browser doesn't support speech recognition. Try using Chrome.");
+    if (
+      !("webkitSpeechRecognition" in window) &&
+      !("SpeechRecognition" in window)
+    ) {
+      setError(
+        "Your browser doesn't support speech recognition. Try using Chrome.",
+      );
       return;
     }
 
     // Initialize speech recognition
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognitionAPI =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognitionAPI) {
       recognitionRef.current = new SpeechRecognitionAPI();
-      
+
       const recognition = recognitionRef.current;
       if (recognition) {
         recognition.continuous = false;
         recognition.interimResults = true;
-        
+
         // Set to English initially, but we'll detect the language
         recognition.lang = "en-US";
 
@@ -129,7 +143,7 @@ export default function VoiceInputExpense({
           const result = event.results[current];
           const transcriptValue = result[0].transcript;
           setTranscript(transcriptValue);
-          
+
           // Use a safer approach for language detection
           // Since browser API doesn't reliably provide language detection,
           // we'll rely on the backend to detect language
@@ -155,7 +169,7 @@ export default function VoiceInputExpense({
     setExtractedData(null);
     setError(null);
     stopSpeaking();
-    
+
     if (recognitionRef.current) {
       recognitionRef.current.start();
     }
@@ -181,9 +195,9 @@ export default function VoiceInputExpense({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          transcript, 
-          language: "auto" // Let the backend detect the language
+        body: JSON.stringify({
+          transcript,
+          language: "auto", // Let the backend detect the language
         }),
       });
 
@@ -192,14 +206,14 @@ export default function VoiceInputExpense({
       }
 
       const data = await response.json();
-      
+
       // If the backend returns a detected language, use it
       if (data.detectedLanguage) {
         setDetectedLanguage(data.detectedLanguage);
       }
-      
+
       setExtractedData(data);
-      
+
       // Provide voice feedback using detected language
       const feedbackText = getFeedbackText(data, detectedLanguage);
       setIsSpeaking(true);
@@ -213,18 +227,18 @@ export default function VoiceInputExpense({
 
   const getFeedbackText = (data: ExpenseFormInput, lang: string): string => {
     // Generate feedback text based on language
-    switch (lang.split('-')[0]) {
-      case 'hi':
+    switch (lang.split("-")[0]) {
+      case "hi":
         return `मैंने ${data.amount} रुपये का ${data.category} खर्च समझा है। क्या यह सही है?`;
-      case 'es':
+      case "es":
         return `He entendido un gasto de ${data.amount} en ${data.category}. ¿Es correcto?`;
-      case 'fr':
+      case "fr":
         return `J'ai compris une dépense de ${data.amount} pour ${data.category}. Est-ce correct?`;
-      case 'de':
+      case "de":
         return `Ich habe eine Ausgabe von ${data.amount} für ${data.category} verstanden. Ist das richtig?`;
-      case 'ja':
+      case "ja":
         return `${data.category}に${data.amount}の支出を理解しました。これは正しいですか？`;
-      case 'zh':
+      case "zh":
         return `我理解了${data.category}的${data.amount}支出。这正确吗？`;
       default:
         return `I understood an expense of ${data.amount} for ${data.category}. Is this correct?`;
@@ -257,7 +271,10 @@ export default function VoiceInputExpense({
         {/* Display detected language if available */}
         {detectedLanguage && transcript && (
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Detected language: <span className="font-medium">{getLanguageName(detectedLanguage)}</span>
+            Detected language:{" "}
+            <span className="font-medium">
+              {getLanguageName(detectedLanguage)}
+            </span>
           </div>
         )}
 
@@ -294,7 +311,9 @@ export default function VoiceInputExpense({
             </svg>
           </button>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            {isListening ? "Listening... Click to stop" : "Click to start speaking"}
+            {isListening
+              ? "Listening... Click to stop"
+              : "Click to start speaking"}
           </p>
         </div>
 
@@ -306,7 +325,9 @@ export default function VoiceInputExpense({
 
         {transcript && (
           <div className="mt-4">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">You said:</h3>
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              You said:
+            </h3>
             <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-800 dark:text-gray-200">
               {transcript}
             </div>
@@ -317,7 +338,14 @@ export default function VoiceInputExpense({
                 className="mt-3 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                 aria-label="Process voice input"
               >
-                {processing ? "Processing..." : "Process Voice Input"}
+                {processing ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <Loader size="small" />
+                    <span>Processing your expense...</span>
+                  </div>
+                ) : (
+                  "Process Voice Input"
+                )}
               </button>
             )}
           </div>
@@ -328,10 +356,15 @@ export default function VoiceInputExpense({
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
               I understood this expense:
             </h3>
-            
+
             <div className="space-y-3">
               <div>
-                <label htmlFor="amount-input" className="block text-xs text-gray-500 dark:text-gray-400">Amount</label>
+                <label
+                  htmlFor="amount-input"
+                  className="block text-xs text-gray-500 dark:text-gray-400"
+                >
+                  Amount
+                </label>
                 <input
                   id="amount-input"
                   type="text"
@@ -341,13 +374,20 @@ export default function VoiceInputExpense({
                   aria-label="Expense amount"
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="category-select" className="block text-xs text-gray-500 dark:text-gray-400">Category</label>
+                <label
+                  htmlFor="category-select"
+                  className="block text-xs text-gray-500 dark:text-gray-400"
+                >
+                  Category
+                </label>
                 <select
                   id="category-select"
                   value={extractedData.category}
-                  onChange={(e) => editExtractedData("category", e.target.value)}
+                  onChange={(e) =>
+                    editExtractedData("category", e.target.value)
+                  }
                   className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                   aria-label="Expense category"
                 >
@@ -359,21 +399,33 @@ export default function VoiceInputExpense({
                   ))}
                 </select>
               </div>
-              
+
               <div>
-                <label htmlFor="description-input" className="block text-xs text-gray-500 dark:text-gray-400">Description</label>
+                <label
+                  htmlFor="description-input"
+                  className="block text-xs text-gray-500 dark:text-gray-400"
+                >
+                  Description
+                </label>
                 <input
                   id="description-input"
                   type="text"
                   value={extractedData.description || ""}
-                  onChange={(e) => editExtractedData("description", e.target.value)}
+                  onChange={(e) =>
+                    editExtractedData("description", e.target.value)
+                  }
                   className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700"
                   aria-label="Expense description"
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="date-input" className="block text-xs text-gray-500 dark:text-gray-400">Date</label>
+                <label
+                  htmlFor="date-input"
+                  className="block text-xs text-gray-500 dark:text-gray-400"
+                >
+                  Date
+                </label>
                 <input
                   id="date-input"
                   type="date"

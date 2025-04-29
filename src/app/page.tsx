@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+
 import UsernameModal from "@/components/UsernameModal";
 import ExpenseForm from "@/components/ExpenseForm";
 import ExpenseList from "@/components/ExpenseList";
 import ExpenseChart from "@/components/ExpenseChart";
 import DateFilter from "@/components/DateFilter";
 import VoiceInputExpense from "@/components/VoiceInputExpense";
+import Loader from "@/components/Loader";
+
 import { Expense, ExpenseFormInput } from "@/types";
 
 const LOCAL_STORAGE_USER_NAME_KEY = "expenseTrackerUsername";
@@ -20,14 +23,19 @@ export default function Home() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [showVoiceInput, setShowVoiceInput] = useState(false);
+  const [showVoiceInput, setShowVoiceInput] = useState(true);
+  const [isAddingExpense, setIsAddingExpense] = useState(false);
+  const [isUpdatingExpense, setIsUpdatingExpense] = useState(false);
+  const [isDeletingExpense, setIsDeletingExpense] = useState<number | null>(
+    null,
+  );
 
   const handleSetUsername = (name: string) => {
     localStorage.setItem(LOCAL_STORAGE_USER_NAME_KEY, name);
     setUsername(name);
     setShowUsernameModal(false);
   };
-  
+
   useEffect(() => {
     const savedUsername = localStorage.getItem(LOCAL_STORAGE_USER_NAME_KEY);
     if (savedUsername) setUsername(savedUsername);
@@ -66,6 +74,7 @@ export default function Home() {
   const handleAddExpense = async (data: ExpenseFormInput) => {
     if (!username) return;
 
+    setIsAddingExpense(true);
     try {
       const response = await fetch("/api/expenses", {
         method: "POST",
@@ -78,10 +87,12 @@ export default function Home() {
       if (response.ok) {
         const newExpense = await response.json();
         setFilteredExpenses((prev) => [newExpense, ...prev]);
-        setShowVoiceInput(false)
+        setShowVoiceInput(false);
       }
     } catch (error) {
       console.error("Error adding expense:", error);
+    } finally {
+      setIsAddingExpense(false);
     }
   };
 
@@ -93,6 +104,7 @@ export default function Home() {
   const handleUpdateExpense = async (data: ExpenseFormInput) => {
     if (!editingExpense) return;
 
+    setIsUpdatingExpense(true);
     try {
       const response = await fetch(
         `/api/expenses/id/?id=${editingExpense.id}`,
@@ -116,10 +128,13 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error updating expense:", error);
+    } finally {
+      setIsUpdatingExpense(false);
     }
   };
 
   const handleDeleteExpense = async (id: number) => {
+    setIsDeletingExpense(id);
     try {
       const response = await fetch(`/api/expenses/id/?id=${id}`, {
         method: "DELETE",
@@ -129,6 +144,8 @@ export default function Home() {
         setFilteredExpenses((prev) => prev.filter((exp) => exp.id !== id));
     } catch (error) {
       console.error("Error deleting expense:", error);
+    } finally {
+      setIsDeletingExpense(null);
     }
   };
 
@@ -137,7 +154,7 @@ export default function Home() {
     setStartDate(start);
     setEndDate(end);
   };
-  
+
   const toggleVoiceInput = () => {
     setShowVoiceInput(!showVoiceInput);
     if (editingExpense) setEditingExpense(null);
@@ -146,7 +163,7 @@ export default function Home() {
   if (!username || showUsernameModal) {
     return <UsernameModal onSetUsername={handleSetUsername} />;
   }
-  
+
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -181,10 +198,10 @@ export default function Home() {
               >
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold text-gray-800">
-                    {editingExpense 
-                      ? "Edit Expense" 
-                      : showVoiceInput 
-                        ? "Voice Input" 
+                    {editingExpense
+                      ? "Edit Expense"
+                      : showVoiceInput
+                        ? "Voice Input"
                         : "Add New Expense"}
                   </h2>
                   <button
@@ -199,42 +216,60 @@ export default function Home() {
                     {showVoiceInput ? "Use Form" : "Use Voice"}
                   </button>
                 </div>
-                
-                {showVoiceInput ? (
-                  <VoiceInputExpense 
-                    onSubmit={handleAddExpense}
-                    onCancel={() => setShowVoiceInput(false)}
-                  />
-                ) : (
-                  <>
-                    <ExpenseForm
-                      onSubmit={
-                        editingExpense ? handleUpdateExpense : handleAddExpense
-                      }
-                      initialData={
-                        editingExpense
-                          ? {
-                              amount: editingExpense.amount.toString(),
-                              category: editingExpense.category,
-                              description: editingExpense.description || "",
-                              date: new Date(editingExpense.date)
-                                .toISOString()
-                                .split("T")[0],
-                            }
-                          : undefined
-                      }
-                      isEditing={!!editingExpense}
+
+                <>
+                  {showVoiceInput ? (
+                    <VoiceInputExpense
+                      onSubmit={handleAddExpense}
+                      onCancel={() => setShowVoiceInput(false)}
                     />
-                    {editingExpense && (
-                      <button
-                        onClick={() => setEditingExpense(null)}
-                        className="mt-4 w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-indigo-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                      >
-                        Cancel Editing
-                      </button>
-                    )}
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <div className="relative">
+                        {(isAddingExpense || isUpdatingExpense) && (
+                          <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+                            <Loader
+                              size="medium"
+                              text={
+                                isUpdatingExpense
+                                  ? "Updating expense..."
+                                  : "Adding expense..."
+                              }
+                            />
+                          </div>
+                        )}
+                        <ExpenseForm
+                          onSubmit={
+                            editingExpense
+                              ? handleUpdateExpense
+                              : handleAddExpense
+                          }
+                          initialData={
+                            editingExpense
+                              ? {
+                                  amount: editingExpense.amount.toString(),
+                                  category: editingExpense.category,
+                                  description: editingExpense.description || "",
+                                  date: new Date(editingExpense.date)
+                                    .toISOString()
+                                    .split("T")[0],
+                                }
+                              : undefined
+                          }
+                          isEditing={!!editingExpense}
+                        />
+                      </div>
+                      {editingExpense && (
+                        <button
+                          onClick={() => setEditingExpense(null)}
+                          className="mt-4 w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-indigo-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Cancel Editing
+                        </button>
+                      )}
+                    </>
+                  )}
+                </>
               </motion.div>
             </div>
 
@@ -247,39 +282,27 @@ export default function Home() {
               >
                 <DateFilter onFilterChange={handleFilterChange} />
 
-                <ExpenseChart expenses={filteredExpenses} />
+                <ExpenseChart
+                  isLoading={isLoading}
+                  expenses={filteredExpenses}
+                />
 
-                {isLoading ? (
-                  <div className="text-center py-12">
-                    <svg
-                      className="animate-spin h-8 w-8 mx-auto text-indigo-600"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    <p className="mt-2 text-gray-500">Loading expenses...</p>
-                  </div>
-                ) : (
-                  <ExpenseList
-                    expenses={filteredExpenses}
-                    onEdit={handleEditExpense}
-                    onDelete={handleDeleteExpense}
-                  />
-                )}
+                <>
+                  {isLoading ? (
+                    <Loader
+                      size="large"
+                      text="Loading expenses..."
+                      className="py-12"
+                    />
+                  ) : (
+                    <ExpenseList
+                      expenses={filteredExpenses}
+                      onEdit={handleEditExpense}
+                      onDelete={handleDeleteExpense}
+                      deletingId={isDeletingExpense}
+                    />
+                  )}
+                </>
               </motion.div>
             </div>
           </div>
