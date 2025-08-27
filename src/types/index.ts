@@ -17,17 +17,16 @@ export type ExpenseFormInput = {
 };
 
 export const CATEGORIES = [
-  "Food",
+  "Grocery",
+   "Dining",
   "Housing/Rent",
-  "Transportation",
+  "Transportation (Intracity)",
   "Entertainment",
   "Utilities",
   "Medicines",
   "Shopping",
-  "Education",
+  "Office Spends",
   "Personal",
-  "Investment: Stocks",
-  "Investment: MF",
   "Travel",
   "Other",
 ];
