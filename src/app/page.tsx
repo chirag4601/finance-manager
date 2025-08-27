@@ -23,7 +23,7 @@ export default function Home() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [showVoiceInput, setShowVoiceInput] = useState(true);
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [isUpdatingExpense, setIsUpdatingExpense] = useState(false);
   const [isDeletingExpense, setIsDeletingExpense] = useState<number | null>(
