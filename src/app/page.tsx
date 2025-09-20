@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+} from "date-fns";
 
 import UsernameModal from "@/components/UsernameModal";
 import ExpenseForm from "@/components/ExpenseForm";
@@ -16,13 +21,15 @@ import { Expense, ExpenseFormInput } from "@/types";
 const LOCAL_STORAGE_USER_NAME_KEY = "expenseTrackerUsername";
 
 export default function Home() {
+  const today = new Date();
+
   const [username, setUsername] = useState<string | null>(null);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(format(startOfMonth(today), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState(format(endOfMonth(today), "yyyy-MM-dd"));
   const [showVoiceInput, setShowVoiceInput] = useState(false);
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [isUpdatingExpense, setIsUpdatingExpense] = useState(false);
@@ -206,11 +213,10 @@ export default function Home() {
                   </h2>
                   <button
                     onClick={toggleVoiceInput}
-                    className={`px-3 py-1 rounded-md text-sm font-medium ${
-                      showVoiceInput
+                    className={`px-3 py-1 rounded-md text-sm font-medium ${showVoiceInput
                         ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
                         : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
-                    }`}
+                      }`}
                     disabled={!!editingExpense}
                   >
                     {showVoiceInput ? "Use Form" : "Use Voice"}
@@ -247,13 +253,13 @@ export default function Home() {
                           initialData={
                             editingExpense
                               ? {
-                                  amount: editingExpense.amount.toString(),
-                                  category: editingExpense.category,
-                                  description: editingExpense.description || "",
-                                  date: new Date(editingExpense.date)
-                                    .toISOString()
-                                    .split("T")[0],
-                                }
+                                amount: editingExpense.amount.toString(),
+                                category: editingExpense.category,
+                                description: editingExpense.description || "",
+                                date: new Date(editingExpense.date)
+                                  .toISOString()
+                                  .split("T")[0],
+                              }
                               : undefined
                           }
                           isEditing={!!editingExpense}

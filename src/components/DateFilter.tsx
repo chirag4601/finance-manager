@@ -16,7 +16,7 @@ interface DateFilterProps {
 }
 
 export default function DateFilter({ onFilterChange }: DateFilterProps) {
-  const [selectedFilter, setSelectedFilter] = useState<string>("all");
+  const [selectedFilter, setSelectedFilter] = useState<string>("month");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
 
@@ -30,9 +30,6 @@ export default function DateFilter({ onFilterChange }: DateFilterProps) {
     switch (filter) {
       case "today":
         startDate = format(today, "yyyy-MM-dd");
-        break;
-      case "7days":
-        startDate = format(subDays(today, 7), "yyyy-MM-dd");
         break;
       case "30days":
         startDate = format(subDays(today, 30), "yyyy-MM-dd");
@@ -73,7 +70,6 @@ export default function DateFilter({ onFilterChange }: DateFilterProps) {
         {[
           { id: "all", label: "All Time" },
           { id: "today", label: "Today" },
-          { id: "7days", label: "Last 7 Days" },
           { id: "30days", label: "Last 30 Days" },
           { id: "month", label: "This Month" },
           { id: "year", label: "This Year" },
@@ -112,7 +108,7 @@ export default function DateFilter({ onFilterChange }: DateFilterProps) {
                 id="start-date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="w-full rounded-md border border-gray-300 py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full rounded-md border text-black border-gray-300 py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
             <div>
@@ -127,7 +123,7 @@ export default function DateFilter({ onFilterChange }: DateFilterProps) {
                 id="end-date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="w-full rounded-md border border-gray-300 py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full rounded-md border text-black border-gray-300 py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
             <div className="sm:col-span-2">
