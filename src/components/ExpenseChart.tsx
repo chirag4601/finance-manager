@@ -30,11 +30,15 @@ ChartJS.register(
 interface ExpenseChartProps {
   expenses: Expense[];
   isLoading: boolean;
+  selectedCategory: string | null;
+  setSelectedCategory: (cat: string | null) => void;
 }
 
 export default function ExpenseChart({
   expenses,
   isLoading,
+  selectedCategory,
+  setSelectedCategory,
 }: ExpenseChartProps) {
   const [chartType, setChartType] = useState<"pie" | "bar">("pie");
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -51,8 +55,13 @@ export default function ExpenseChart({
     }
   }, []);
 
+  // Filter expenses by selected category if any
+  const filteredExpenses = selectedCategory
+    ? expenses.filter((exp) => exp.category === selectedCategory)
+    : expenses;
+
   // Process data for charts
-  const categoryData = expenses.reduce(
+  const categoryData = filteredExpenses.reduce(
     (acc, expense) => {
       const category = expense.category;
       if (!acc[category]) {
@@ -140,6 +149,12 @@ export default function ExpenseChart({
             family: "'Inter', sans-serif",
           },
           color: theme === "dark" ? "#e4e4e7" : "#27272a",
+        },
+        onClick: (e: any, legendItem: any, legend: any) => {
+          const selected = legend.chart.data.labels[legendItem.index];
+          setSelectedCategory((prev) =>
+            prev === selected ? null : selected
+          );
         },
       },
       tooltip: {

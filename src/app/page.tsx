@@ -36,6 +36,7 @@ export default function Home() {
   const [isDeletingExpense, setIsDeletingExpense] = useState<number | null>(
     null,
   );
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const handleSetUsername = (name: string) => {
     localStorage.setItem(LOCAL_STORAGE_USER_NAME_KEY, name);
@@ -291,6 +292,8 @@ export default function Home() {
                 <ExpenseChart
                   isLoading={isLoading}
                   expenses={filteredExpenses}
+                  selectedCategory={selectedCategory}
+                  setSelectedCategory={setSelectedCategory}
                 />
 
                 <>
@@ -302,7 +305,7 @@ export default function Home() {
                     />
                   ) : (
                     <ExpenseList
-                      expenses={filteredExpenses}
+                      expenses={selectedCategory ? filteredExpenses.filter(exp => exp.category === selectedCategory) : filteredExpenses}
                       onEdit={handleEditExpense}
                       onDelete={handleDeleteExpense}
                       deletingId={isDeletingExpense}
