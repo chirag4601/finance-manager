@@ -22,16 +22,52 @@ export default function ExpenseList({
   deletingId,
 }: ExpenseListProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [sortOption, setSortOption] = useState<
+    "amount-desc" | "amount-asc" | "date-desc" | "date-asc"
+  >("amount-desc");
 
   const toggleExpand = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
+  const sortExpenses = (expenses: Expense[], sortBy: typeof sortOption) => {
+    const sorted = [...expenses];
+
+    switch (sortBy) {
+      case "amount-desc":
+        return sorted.sort((a, b) => b.amount - a.amount);
+      case "amount-asc":
+        return sorted.sort((a, b) => a.amount - b.amount);
+      case "date-desc":
+        return sorted.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
+      case "date-asc":
+        return sorted.sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        );
+      default:
+        return sorted;
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-gray-800">
-        Recently Added Expenses
-      </h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold text-gray-800">
+          Recently Added Expenses
+        </h2>
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
+          className="px-3 py-1.5 border border-gray-300 rounded-md text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+        >
+          <option value="amount-desc">Amount: High to Low</option>
+          <option value="amount-asc">Amount: Low to High</option>
+          <option value="date-desc">Date: Recent First</option>
+          <option value="date-asc">Date: Oldest First</option>
+        </select>
+      </div>
 
       {expenses.length === 0 ? (
         <motion.div
@@ -52,7 +88,7 @@ export default function ExpenseList({
         >
           <AnimatePresence>
             <>
-              {expenses.map((expense) => (
+              {sortExpenses(expenses, sortOption).map((expense) => (
                 <motion.li
                   key={expense.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -67,7 +103,11 @@ export default function ExpenseList({
                   >
                     <div className="flex items-center space-x-3">
                       <div className="bg-indigo-100 rounded-full p-2 text-indigo-600">
-                        <CategoryIcon category={expense.category} size={20} className="opacity-80" />
+                        <CategoryIcon
+                          category={expense.category}
+                          size={20}
+                          className="opacity-80"
+                        />
                       </div>
                       <div>
                         <p className="font-medium text-gray-800">
