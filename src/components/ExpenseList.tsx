@@ -24,7 +24,7 @@ export default function ExpenseList({
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [sortOption, setSortOption] = useState<
     "amount-desc" | "amount-asc" | "date-desc" | "date-asc"
-  >("amount-desc");
+  >("date-desc");
 
   const toggleExpand = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
