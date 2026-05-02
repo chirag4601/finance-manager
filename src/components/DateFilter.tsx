@@ -1,142 +1,213 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  addMonths,
   endOfMonth,
-  endOfYear,
   format,
+  isSameMonth,
   startOfMonth,
-  startOfYear,
-  subDays,
+  subMonths,
 } from "date-fns";
-import { motion } from "framer-motion";
+import { CaretLeft, CaretRight } from "phosphor-react";
+import { Palette } from "@/lib/khaata";
 
 interface DateFilterProps {
   onFilterChange: (startDate: string, endDate: string) => void;
+  onRangeChange?: (end: Date) => void;
+  p: Palette;
 }
 
-export default function DateFilter({ onFilterChange }: DateFilterProps) {
-  const [selectedFilter, setSelectedFilter] = useState<string>("month");
-  const [customStartDate, setCustomStartDate] = useState<string>("");
-  const [customEndDate, setCustomEndDate] = useState<string>("");
+type Mode = "month" | "custom";
 
-  const applyFilter = (filter: string) => {
-    setSelectedFilter(filter);
+export default function DateFilter({
+  onFilterChange,
+  onRangeChange,
+  p,
+}: DateFilterProps) {
+  const today = new Date();
+  const [mode, setMode] = useState<Mode>("month");
+  const [anchor, setAnchor] = useState<Date>(startOfMonth(today));
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
 
-    const today = new Date();
-    let startDate = "";
-    let endDate = format(today, "yyyy-MM-dd");
+  const isCurrentMonth = isSameMonth(anchor, today);
 
-    switch (filter) {
-      case "today":
-        startDate = format(today, "yyyy-MM-dd");
-        break;
-      case "30days":
-        startDate = format(subDays(today, 30), "yyyy-MM-dd");
-        break;
-      case "month":
-        startDate = format(startOfMonth(today), "yyyy-MM-dd");
-        endDate = format(endOfMonth(today), "yyyy-MM-dd");
-        break;
-      case "year":
-        startDate = format(startOfYear(today), "yyyy-MM-dd");
-        endDate = format(endOfYear(today), "yyyy-MM-dd");
-        break;
-      case "custom":
-        return; // Don't set dates yet, wait for custom input
-      case "all":
-      default:
-        startDate = "";
-        endDate = "";
-        break;
-    }
+  useEffect(() => {
+    if (mode !== "month") return;
+    onFilterChange(
+      format(startOfMonth(anchor), "yyyy-MM-dd"),
+      format(endOfMonth(anchor), "yyyy-MM-dd"),
+    );
+    onRangeChange?.(endOfMonth(anchor));
+  }, [anchor, mode, onFilterChange, onRangeChange]);
 
-    onFilterChange(startDate, endDate);
+  const goPrev = () => setAnchor((d) => subMonths(d, 1));
+  const goNext = () => {
+    if (isCurrentMonth) return;
+    setAnchor((d) => addMonths(d, 1));
+  };
+
+  const resetToThisMonth = () => {
+    setMode("month");
+    setAnchor(startOfMonth(today));
   };
 
   const applyCustomFilter = () => {
     if (customStartDate && customEndDate) {
       onFilterChange(customStartDate, customEndDate);
+      onRangeChange?.(new Date(customEndDate));
     }
   };
 
+  const label = isCurrentMonth
+    ? `This month · ${format(anchor, "MMM yyyy")}`
+    : isSameMonth(anchor, subMonths(today, 1))
+      ? `Last month · ${format(anchor, "MMM yyyy")}`
+      : format(anchor, "MMMM yyyy");
+
+  const pillStyle = (active: boolean): React.CSSProperties => ({
+    padding: "7px 14px",
+    borderRadius: 999,
+    background: active ? p.fg : "transparent",
+    color: active ? p.bg : p.muted,
+    border: `1px solid ${active ? p.fg : p.border}`,
+    fontSize: 11,
+    fontFamily: "Inter, sans-serif",
+    cursor: "pointer",
+    letterSpacing: "0.04em",
+    textTransform: "uppercase",
+    fontWeight: 500,
+    transition: "all .15s",
+  });
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white p-4 rounded-lg shadow-sm border border-gray-100"
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 8,
+        alignItems: "center",
+      }}
     >
-      <div className="flex flex-wrap gap-2 mb-4">
-        {[
-          { id: "all", label: "All Time" },
-          { id: "today", label: "Today" },
-          { id: "30days", label: "Last 30 Days" },
-          { id: "month", label: "This Month" },
-          { id: "year", label: "This Year" },
-          { id: "custom", label: "Custom" },
-        ].map((filter) => (
-          <button
-            key={filter.id}
-            onClick={() => applyFilter(filter.id)}
-            className={`px-3 py-1 text-sm rounded-md transition-colors ${
-              selectedFilter === filter.id
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            {filter.label}
-          </button>
-        ))}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "stretch",
+          border: `1px solid ${mode === "month" ? p.fg : p.border}`,
+          borderRadius: 999,
+          overflow: "hidden",
+          background: mode === "month" ? p.fg : "transparent",
+          color: mode === "month" ? p.bg : p.muted,
+          transition: "all .15s",
+        }}
+      >
+        <button
+          onClick={goPrev}
+          aria-label="Previous month"
+          style={{
+            padding: "0 10px",
+            background: "transparent",
+            color: "inherit",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <CaretLeft size={14} weight="bold" />
+        </button>
+        <button
+          onClick={() => setMode("month")}
+          style={{
+            padding: "7px 4px",
+            minWidth: "8.5rem",
+            textAlign: "center",
+            background: "transparent",
+            color: "inherit",
+            border: "none",
+            fontSize: 11,
+            fontFamily: "Inter, sans-serif",
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          {label}
+        </button>
+        <button
+          onClick={goNext}
+          disabled={isCurrentMonth}
+          aria-label="Next month"
+          style={{
+            padding: "0 10px",
+            background: "transparent",
+            color: "inherit",
+            border: "none",
+            cursor: isCurrentMonth ? "not-allowed" : "pointer",
+            opacity: isCurrentMonth ? 0.3 : 1,
+          }}
+        >
+          <CaretRight size={14} weight="bold" />
+        </button>
       </div>
 
-      <>
-        {selectedFilter === "custom" && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-          >
-            <div>
-              <label
-                htmlFor="start-date"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Start Date
-              </label>
-              <input
-                type="date"
-                id="start-date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="w-full rounded-md border text-black border-gray-300 py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="end-date"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                End Date
-              </label>
-              <input
-                type="date"
-                id="end-date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="w-full rounded-md border text-black border-gray-300 py-2 px-3 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <button
-                onClick={applyCustomFilter}
-                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 transition-colors"
-              >
-                Apply Custom Filter
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </>
-    </motion.div>
+      {!isCurrentMonth && mode === "month" && (
+        <button onClick={resetToThisMonth} style={pillStyle(false)}>
+          Jump to this month
+        </button>
+      )}
+
+      <button onClick={() => setMode("custom")} style={pillStyle(mode === "custom")}>
+        Custom
+      </button>
+
+      {mode === "custom" && (
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            marginLeft: "auto",
+          }}
+        >
+          <input
+            type="date"
+            value={customStartDate}
+            onChange={(e) => setCustomStartDate(e.target.value)}
+            style={{
+              padding: "6px 10px",
+              background: p.surface2,
+              border: `1px solid ${p.border}`,
+              borderRadius: 999,
+              fontSize: 11,
+              color: p.fg,
+              fontFamily: "Inter, sans-serif",
+              outline: "none",
+              colorScheme: p.bg === "#0a0a0c" ? "dark" : "light",
+            }}
+          />
+          <span style={{ color: p.muted, fontSize: 11 }}>to</span>
+          <input
+            type="date"
+            value={customEndDate}
+            onChange={(e) => setCustomEndDate(e.target.value)}
+            style={{
+              padding: "6px 10px",
+              background: p.surface2,
+              border: `1px solid ${p.border}`,
+              borderRadius: 999,
+              fontSize: 11,
+              color: p.fg,
+              fontFamily: "Inter, sans-serif",
+              outline: "none",
+              colorScheme: p.bg === "#0a0a0c" ? "dark" : "light",
+            }}
+          />
+          <button onClick={applyCustomFilter} style={pillStyle(true)}>
+            Apply
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
