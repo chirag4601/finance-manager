@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Microphone, MicrophoneSlash } from "phosphor-react";
 import {
   CATEGORIES,
   catColor,
@@ -10,6 +11,7 @@ import {
   useIsMobile,
 } from "@/lib/khaata";
 import { ExpenseFormInput, Expense } from "@/types";
+import { useDictation } from "@/hooks/useDictation";
 import AmountNumpad from "./AmountNumpad";
 
 type Props = {
@@ -56,6 +58,28 @@ export default function AddExpensePanel({
     category: string;
   } | null>(null);
   const isMobile = useIsMobile();
+  const descriptionBeforeDictation = useRef("");
+  const {
+    listening,
+    supported: dictationSupported,
+    interim,
+    start: startDictation,
+    stop: stopDictation,
+  } = useDictation({
+    onCommit: (text) => {
+      const base = descriptionBeforeDictation.current;
+      setDescription(base ? `${base} ${text}`.trim() : text);
+    },
+  });
+
+  const toggleDictation = () => {
+    if (listening) {
+      stopDictation();
+    } else {
+      descriptionBeforeDictation.current = description;
+      startDictation();
+    }
+  };
 
   const isEditing = !!initialData;
 
@@ -219,23 +243,58 @@ export default function AddExpensePanel({
       >
         <div>
           <Label p={p}>Description (optional)</Label>
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="e.g. Lunch with team"
-            style={{
-              width: "100%",
-              padding: "9px 10px",
-              background: p.surface2,
-              border: `1px solid ${p.border}`,
-              borderRadius: 6,
-              fontSize: 13,
-              color: p.fg,
-              fontFamily: "Inter, sans-serif",
-              outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
+          <div style={{ position: "relative" }}>
+            <input
+              value={listening && interim ? `${description} ${interim}`.trim() : description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={
+                listening ? "Listening…" : "e.g. Lunch with team"
+              }
+              style={{
+                width: "100%",
+                padding: `9px ${dictationSupported ? 38 : 10}px 9px 10px`,
+                background: p.surface2,
+                border: `1px solid ${listening ? p.accent : p.border}`,
+                borderRadius: 6,
+                fontSize: 13,
+                color: p.fg,
+                fontFamily: "Inter, sans-serif",
+                outline: "none",
+                boxSizing: "border-box",
+                transition: "border-color .15s",
+              }}
+            />
+            {dictationSupported && (
+              <button
+                type="button"
+                onClick={toggleDictation}
+                aria-label={listening ? "Stop dictation" : "Start dictation"}
+                style={{
+                  position: "absolute",
+                  right: 4,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: 28,
+                  height: 28,
+                  borderRadius: 999,
+                  border: "none",
+                  background: listening ? p.accent : "transparent",
+                  color: listening ? p.bg : p.muted,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  animation: listening ? "pulse 1.4s infinite" : "none",
+                }}
+              >
+                {listening ? (
+                  <MicrophoneSlash size={14} weight="bold" />
+                ) : (
+                  <Microphone size={14} weight="regular" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
         <div>
           <Label p={p}>Date</Label>
