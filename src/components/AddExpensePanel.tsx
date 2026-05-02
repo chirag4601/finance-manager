@@ -23,6 +23,23 @@ type Props = {
   onCancelEdit?: () => void;
 };
 
+function formatDateLabel(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.round(
+    (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  if (diffDays === 0) return "Today";
+  if (diffDays === -1) return "Yesterday";
+  return d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: d.getFullYear() === today.getFullYear() ? undefined : "numeric",
+  });
+}
+
 function Label({ children, p }: { children: React.ReactNode; p: Palette }) {
   return (
     <div
@@ -59,6 +76,31 @@ export default function AddExpensePanel({
   } | null>(null);
   const isMobile = useIsMobile();
   const descriptionBeforeDictation = useRef("");
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
+
+  const openDatePicker = () => {
+    const el = dateInputRef.current;
+    if (!el) return;
+    const active = document.activeElement as HTMLElement | null;
+    if (active && active !== el && typeof active.blur === "function") {
+      active.blur();
+    }
+    const showPicker = (
+      el as HTMLInputElement & { showPicker?: () => void }
+    ).showPicker;
+    const open = () => {
+      if (typeof showPicker === "function") {
+        try {
+          showPicker.call(el);
+          return;
+        } catch {}
+      }
+      el.focus();
+      el.click();
+    };
+    setTimeout(open, 50);
+  };
+
   const {
     listening,
     supported: dictationSupported,
@@ -298,24 +340,69 @@ export default function AddExpensePanel({
         </div>
         <div>
           <Label p={p}>Date</Label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "9px 10px",
-              background: p.surface2,
-              border: `1px solid ${p.border}`,
-              borderRadius: 6,
-              fontSize: 13,
-              color: p.fg,
-              fontFamily: "Inter, sans-serif",
-              outline: "none",
-              boxSizing: "border-box",
-              colorScheme: theme,
-            }}
-          />
+          <div style={{ position: "relative" }}>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              tabIndex={-1}
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: 0,
+                bottom: 0,
+                width: 1,
+                height: 1,
+                opacity: 0,
+                border: "none",
+                pointerEvents: "none",
+              }}
+            />
+            <button
+              type="button"
+              onClick={openDatePicker}
+              style={{
+                width: "100%",
+                padding: "9px 10px",
+                paddingRight: date ? 54 : 10,
+                background: p.surface2,
+                border: `1px solid ${p.border}`,
+                borderRadius: 6,
+                fontSize: 13,
+                color: date ? p.fg : p.muted,
+                fontFamily: "Inter, sans-serif",
+                outline: "none",
+                boxSizing: "border-box",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              {date ? formatDateLabel(date) : "Today"}
+            </button>
+            {date && (
+              <button
+                type="button"
+                onClick={() => setDate("")}
+                style={{
+                  position: "absolute",
+                  right: 6,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  padding: "4px 8px",
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 11,
+                  color: p.muted,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  cursor: "pointer",
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

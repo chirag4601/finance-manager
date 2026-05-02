@@ -37,7 +37,7 @@ export default function AmountNumpad({ value, onChange, theme, p }: Props) {
         <span
           style={{
             fontFamily: '"JetBrains Mono", monospace',
-            fontSize: isMobile ? 14 : 18,
+            fontSize: isMobile ? 22 : 18,
             color: p.muted,
           }}
         >
