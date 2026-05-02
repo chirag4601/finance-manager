@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { endOfMonth, format, startOfMonth } from "date-fns";
 
+import { Moon, Sun, UserCircle } from "phosphor-react";
+
 import UsernameModal from "@/components/UsernameModal";
 import DateFilter from "@/components/DateFilter";
 import AddExpensePanel from "@/components/AddExpensePanel";
@@ -258,13 +260,12 @@ export default function Home() {
         <div
           style={{
             display: "flex",
-            alignItems: "flex-end",
+            alignItems: isMobile ? "flex-start" : "flex-end",
             justifyContent: "space-between",
-            marginBottom: 28,
-            paddingBottom: 20,
+            marginBottom: isMobile ? 16 : 28,
+            paddingBottom: isMobile ? 12 : 20,
             borderBottom: `1px solid ${p.border}`,
-            gap: 20,
-            flexWrap: "wrap",
+            gap: 12,
           }}
         >
           <div style={{ minWidth: 0 }}>
@@ -298,58 +299,103 @@ export default function Home() {
               </em>
             </h1>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button
-              onClick={toggleTheme}
-              style={{
-                padding: "7px 14px",
-                borderRadius: 999,
-                background: "transparent",
-                color: p.muted,
-                border: `1px solid ${p.border}`,
-                fontSize: 11,
-                fontFamily: "Inter, sans-serif",
-                cursor: "pointer",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                fontWeight: 500,
-              }}
-            >
-              {theme === "light" ? "Dark" : "Light"}
-            </button>
-            <button
-              onClick={() => setShowUsernameModal(true)}
-              style={{
-                padding: "7px 14px",
-                borderRadius: 999,
-                background: "transparent",
-                color: p.muted,
-                border: `1px solid ${p.border}`,
-                fontSize: 11,
-                fontFamily: "Inter, sans-serif",
-                cursor: "pointer",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                fontWeight: 500,
-              }}
-            >
-              Change name
-            </button>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            {isMobile ? (
+              <>
+                <button
+                  onClick={toggleTheme}
+                  aria-label={theme === "light" ? "Switch to dark" : "Switch to light"}
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 999,
+                    background: "transparent",
+                    color: p.muted,
+                    border: `1px solid ${p.border}`,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {theme === "light" ? (
+                    <Moon size={16} weight="regular" />
+                  ) : (
+                    <Sun size={16} weight="regular" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowUsernameModal(true)}
+                  aria-label="Change name"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 999,
+                    background: "transparent",
+                    color: p.muted,
+                    border: `1px solid ${p.border}`,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <UserCircle size={18} weight="regular" />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={toggleTheme}
+                  style={{
+                    padding: "7px 14px",
+                    borderRadius: 999,
+                    background: "transparent",
+                    color: p.muted,
+                    border: `1px solid ${p.border}`,
+                    fontSize: 11,
+                    fontFamily: "Inter, sans-serif",
+                    cursor: "pointer",
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                    fontWeight: 500,
+                  }}
+                >
+                  {theme === "light" ? "Dark" : "Light"}
+                </button>
+                <button
+                  onClick={() => setShowUsernameModal(true)}
+                  style={{
+                    padding: "7px 14px",
+                    borderRadius: 999,
+                    background: "transparent",
+                    color: p.muted,
+                    border: `1px solid ${p.border}`,
+                    fontSize: 11,
+                    fontFamily: "Inter, sans-serif",
+                    cursor: "pointer",
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                    fontWeight: 500,
+                  }}
+                >
+                  Change name
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Date filter row */}
-        <div style={{ marginBottom: 20 }}>
-          <DateFilter
-            onFilterChange={handleFilterChange}
-            onRangeChange={handleRangeChange}
-            p={p}
-          />
-        </div>
-
-        {/* Mobile: AddExpensePanel goes right after the date filter */}
+        {/* Mobile: Add comes first, then filter, then analytics */}
         {isMobile && (
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 16 }}>
             <AddExpensePanel
               theme={theme}
               p={p}
@@ -360,6 +406,15 @@ export default function Home() {
             />
           </div>
         )}
+
+        {/* Date filter row */}
+        <div style={{ marginBottom: 20 }}>
+          <DateFilter
+            onFilterChange={handleFilterChange}
+            onRangeChange={handleRangeChange}
+            p={p}
+          />
+        </div>
 
         {/* Hero stats */}
         <div

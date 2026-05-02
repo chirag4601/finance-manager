@@ -9,8 +9,8 @@ import {
   startOfMonth,
   subMonths,
 } from "date-fns";
-import { CaretLeft, CaretRight } from "phosphor-react";
-import { Palette } from "@/lib/khaata";
+import { CaretLeft, CaretRight, House } from "phosphor-react";
+import { Palette, useIsMobile } from "@/lib/khaata";
 
 interface DateFilterProps {
   onFilterChange: (startDate: string, endDate: string) => void;
@@ -30,6 +30,7 @@ export default function DateFilter({
   const [anchor, setAnchor] = useState<Date>(startOfMonth(today));
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
+  const isMobile = useIsMobile();
 
   const isCurrentMonth = isSameMonth(anchor, today);
 
@@ -151,11 +152,31 @@ export default function DateFilter({
         </button>
       </div>
 
-      {!isCurrentMonth && mode === "month" && (
-        <button onClick={resetToThisMonth} style={pillStyle(false)}>
-          Jump to this month
-        </button>
-      )}
+      {!isCurrentMonth && mode === "month" &&
+        (isMobile ? (
+          <button
+            onClick={resetToThisMonth}
+            aria-label="Jump to this month"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 999,
+              background: "transparent",
+              color: p.muted,
+              border: `1px solid ${p.border}`,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <House size={14} weight="regular" />
+          </button>
+        ) : (
+          <button onClick={resetToThisMonth} style={pillStyle(false)}>
+            Jump to this month
+          </button>
+        ))}
 
       <button onClick={() => setMode("custom")} style={pillStyle(mode === "custom")}>
         Custom
