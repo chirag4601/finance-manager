@@ -111,7 +111,7 @@ export default function AddExpensePanel({
           style={{
             margin: 0,
             fontFamily: '"Instrument Serif", serif',
-            fontSize: 26,
+            fontSize: isMobile ? 22 : 26,
             fontWeight: 400,
             color: p.fg,
             letterSpacing: "-0.01em",
@@ -139,16 +139,18 @@ export default function AddExpensePanel({
           </button>
         )}
       </div>
-      <p
-        style={{
-          margin: 0,
-          color: p.muted,
-          fontSize: 12,
-          fontFamily: "Inter, sans-serif",
-        }}
-      >
-        Type an amount, pick a category, done.
-      </p>
+      {!isMobile && (
+        <p
+          style={{
+            margin: 0,
+            color: p.muted,
+            fontSize: 12,
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          Type an amount, pick a category, done.
+        </p>
+      )}
 
       <AmountNumpad value={amount} onChange={setAmount} theme={theme} p={p} />
 
@@ -157,9 +159,7 @@ export default function AddExpensePanel({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isMobile
-              ? "repeat(2, 1fr)"
-              : "repeat(3, 1fr)",
+            gridTemplateColumns: "repeat(3, 1fr)",
             gap: 6,
           }}
         >

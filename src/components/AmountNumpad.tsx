@@ -1,6 +1,6 @@
 "use client";
 
-import { Palette, Theme } from "@/lib/khaata";
+import { Palette, Theme, useIsMobile } from "@/lib/khaata";
 
 type Props = {
   value: number;
@@ -11,6 +11,7 @@ type Props = {
 
 export default function AmountNumpad({ value, onChange, theme, p }: Props) {
   const display = value === 0 ? "0" : value.toLocaleString("en-IN");
+  const isMobile = useIsMobile();
   const press = (key: string) => {
     if (key === "back") return onChange(Math.floor(value / 10));
     if (key === "00") {
@@ -29,14 +30,14 @@ export default function AmountNumpad({ value, onChange, theme, p }: Props) {
           display: "flex",
           alignItems: "baseline",
           gap: 8,
-          padding: "20px 0 14px",
+          padding: isMobile ? "12px 0 10px" : "20px 0 14px",
           borderBottom: `1px solid ${p.border}`,
         }}
       >
         <span
           style={{
             fontFamily: '"JetBrains Mono", monospace',
-            fontSize: 18,
+            fontSize: isMobile ? 14 : 18,
             color: p.muted,
           }}
         >
@@ -45,7 +46,7 @@ export default function AmountNumpad({ value, onChange, theme, p }: Props) {
         <span
           style={{
             fontFamily: '"JetBrains Mono", monospace',
-            fontSize: 56,
+            fontSize: isMobile ? 40 : 56,
             fontWeight: 500,
             lineHeight: 1,
             letterSpacing: "-0.02em",
@@ -86,11 +87,11 @@ export default function AmountNumpad({ value, onChange, theme, p }: Props) {
             key={k}
             onClick={() => press(k)}
             style={{
-              padding: "14px 0",
+              padding: isMobile ? "9px 0" : "14px 0",
               background: p.surface2,
               border: `1px solid ${p.border}`,
               borderRadius: 6,
-              fontSize: 18,
+              fontSize: isMobile ? 15 : 18,
               fontFamily: '"JetBrains Mono", monospace',
               color: p.fg,
               cursor: "pointer",

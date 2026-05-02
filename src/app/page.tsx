@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { endOfMonth, format, startOfMonth } from "date-fns";
 
 import { Moon, Sun, UserCircle } from "phosphor-react";
@@ -9,84 +9,13 @@ import UsernameModal from "@/components/UsernameModal";
 import DateFilter from "@/components/DateFilter";
 import AddExpensePanel from "@/components/AddExpensePanel";
 import ChartPanel from "@/components/ChartPanel";
-import TrendPanel from "@/components/TrendPanel";
 import ActivityList from "@/components/ActivityList";
 
-import {
-  CAT_BY_ID,
-  fmtINR,
-  groupByCategory,
-  palette,
-  Theme,
-  useIsMobile,
-} from "@/lib/khaata";
+import { palette, Theme, useIsMobile } from "@/lib/khaata";
 import { Expense, ExpenseFormInput } from "@/types";
 
 const LOCAL_STORAGE_USER_NAME_KEY = "expenseTrackerUsername";
 const LOCAL_STORAGE_THEME_KEY = "khaataTheme";
-
-function StatCard({
-  label,
-  value,
-  sub,
-  p,
-  large = false,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  p: ReturnType<typeof palette>;
-  large?: boolean;
-}) {
-  return (
-    <div
-      style={{
-        padding: "14px 16px",
-        border: `1px solid ${p.border}`,
-        borderRadius: 8,
-        background: p.surface,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 10,
-          color: p.muted,
-          textTransform: "uppercase",
-          letterSpacing: "0.1em",
-          fontFamily: "Inter, sans-serif",
-          fontWeight: 500,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontFamily: '"JetBrains Mono", monospace',
-          fontSize: large ? 28 : 22,
-          fontWeight: 500,
-          color: p.fg,
-          marginTop: 4,
-          letterSpacing: "-0.01em",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {value}
-      </div>
-      {sub && (
-        <div
-          style={{
-            fontSize: 11,
-            color: p.muted,
-            marginTop: 3,
-            fontFamily: "Inter, sans-serif",
-          }}
-        >
-          {sub}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function Home() {
   const [username, setUsername] = useState<string | null>(null);
@@ -101,7 +30,6 @@ export default function Home() {
   const [endDate, setEndDate] = useState(() =>
     format(endOfMonth(new Date()), "yyyy-MM-dd"),
   );
-  const [rangeEnd, setRangeEnd] = useState<Date>(endOfMonth(new Date()));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -154,10 +82,6 @@ export default function Home() {
   const handleFilterChange = useCallback((start: string, end: string) => {
     setStartDate(start);
     setEndDate(end);
-  }, []);
-
-  const handleRangeChange = useCallback((end: Date) => {
-    setRangeEnd(end);
   }, []);
 
   const handleAddOrUpdate = async (
@@ -218,11 +142,6 @@ export default function Home() {
     localStorage.setItem(LOCAL_STORAGE_THEME_KEY, next);
   };
 
-  const total = useMemo(
-    () => expenses.reduce((s, e) => s + e.amount, 0),
-    [expenses],
-  );
-  const topCat = useMemo(() => groupByCategory(expenses)[0], [expenses]);
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",
@@ -232,12 +151,6 @@ export default function Home() {
   if (!username || showUsernameModal) {
     return <UsernameModal onSetUsername={handleSetUsername} theme={theme} />;
   }
-
-  const activeDayCount = Math.max(
-    1,
-    new Set(expenses.map((e) => new Date(e.date).toDateString())).size,
-  );
-  const avg = total / activeDayCount;
 
   return (
     <main
@@ -269,23 +182,25 @@ export default function Home() {
           }}
         >
           <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 11,
-                color: p.muted,
-                textTransform: "uppercase",
-                letterSpacing: "0.16em",
-                fontFamily: '"JetBrains Mono", monospace',
-                marginBottom: 8,
-              }}
-            >
-              Ledger · {today}
-            </div>
+            {!isMobile && (
+              <div
+                style={{
+                  fontSize: 11,
+                  color: p.muted,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.16em",
+                  fontFamily: '"JetBrains Mono", monospace',
+                  marginBottom: 8,
+                }}
+              >
+                Ledger · {today}
+              </div>
+            )}
             <h1
               style={{
                 margin: 0,
                 fontFamily: '"Instrument Serif", serif',
-                fontSize: isMobile ? 38 : 56,
+                fontSize: isMobile ? 28 : 56,
                 fontWeight: 400,
                 letterSpacing: "-0.02em",
                 color: p.fg,
@@ -293,7 +208,7 @@ export default function Home() {
                 wordBreak: "break-word",
               }}
             >
-              Welcome,{" "}
+              {isMobile ? "Hi, " : "Welcome, "}
               <em style={{ fontStyle: "italic", color: p.accent }}>
                 {username}.
               </em>
@@ -409,49 +324,7 @@ export default function Home() {
 
         {/* Date filter row */}
         <div style={{ marginBottom: 20 }}>
-          <DateFilter
-            onFilterChange={handleFilterChange}
-            onRangeChange={handleRangeChange}
-            p={p}
-          />
-        </div>
-
-        {/* Hero stats */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isMobile
-              ? "repeat(2, 1fr)"
-              : "1.4fr 1fr 1fr 1fr",
-            gap: 12,
-            marginBottom: 20,
-          }}
-        >
-          <StatCard
-            label="Spent"
-            value={fmtINR(total)}
-            sub={`${expenses.length} ${expenses.length === 1 ? "expense" : "expenses"} · this range`}
-            p={p}
-            large
-          />
-          <StatCard
-            label="Daily average"
-            value={fmtINR(Math.round(avg), { compact: true })}
-            sub="across active days"
-            p={p}
-          />
-          <StatCard
-            label="Top category"
-            value={topCat ? CAT_BY_ID[topCat.id]?.name || topCat.name : "—"}
-            sub={topCat ? fmtINR(topCat.total) : "no data"}
-            p={p}
-          />
-          <StatCard
-            label="Entries"
-            value={expenses.length}
-            sub={isLoading ? "loading…" : "in range"}
-            p={p}
-          />
+          <DateFilter onFilterChange={handleFilterChange} p={p} />
         </div>
 
         {/* Main grid */}
@@ -481,12 +354,6 @@ export default function Home() {
               p={p}
               selectedCategory={selectedCategory}
               onSelectCategory={setSelectedCategory}
-            />
-            <TrendPanel
-              expenses={expenses}
-              theme={theme}
-              p={p}
-              rangeEnd={rangeEnd}
             />
             <ActivityList
               expenses={expenses}

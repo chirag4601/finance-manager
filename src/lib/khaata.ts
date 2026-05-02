@@ -1,20 +1,21 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Expense } from "@/types";
 
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-  useEffect(() => {
+  const subscribe = (cb: () => void) => {
+    if (typeof window === "undefined") return () => {};
     const mql = window.matchMedia(query);
-    const update = () => setMatches(mql.matches);
-    update();
-    mql.addEventListener("change", update);
-    return () => mql.removeEventListener("change", update);
-  }, [query]);
-  return matches;
+    mql.addEventListener("change", cb);
+    return () => mql.removeEventListener("change", cb);
+  };
+  const getSnapshot = () =>
+    typeof window !== "undefined" && window.matchMedia(query).matches;
+  const getServerSnapshot = () => false;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 export function useIsMobile(): boolean {
-  return useMediaQuery("(max-width: 768px)");
+  return useMediaQuery("(max-width: 900px)");
 }
 
 export type Theme = "light" | "dark";
