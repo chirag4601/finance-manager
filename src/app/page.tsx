@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { endOfMonth, format, startOfMonth } from "date-fns";
 
-import { Moon, Sun, UserCircle } from "phosphor-react";
+import { Moon, SignOut, Sun } from "phosphor-react";
 
 import UsernameModal from "@/components/UsernameModal";
 import DateFilter from "@/components/DateFilter";
@@ -41,6 +41,13 @@ export default function Home() {
     localStorage.setItem(LOCAL_STORAGE_USER_NAME_KEY, name);
     setUsername(name);
     setShowUsernameModal(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(LOCAL_STORAGE_USER_NAME_KEY);
+    setUsername(null);
+    setExpenses([]);
+    setShowUsernameModal(true);
   };
 
   useEffect(() => {
@@ -247,8 +254,8 @@ export default function Home() {
                   )}
                 </button>
                 <button
-                  onClick={() => setShowUsernameModal(true)}
-                  aria-label="Change name"
+                  onClick={handleLogout}
+                  aria-label="Logout"
                   style={{
                     width: 34,
                     height: 34,
@@ -262,7 +269,7 @@ export default function Home() {
                     justifyContent: "center",
                   }}
                 >
-                  <UserCircle size={18} weight="regular" />
+                  <SignOut size={16} weight="regular" />
                 </button>
               </>
             ) : (
@@ -286,7 +293,7 @@ export default function Home() {
                   {theme === "light" ? "Dark" : "Light"}
                 </button>
                 <button
-                  onClick={() => setShowUsernameModal(true)}
+                  onClick={handleLogout}
                   style={{
                     padding: "7px 14px",
                     borderRadius: 999,
@@ -301,7 +308,7 @@ export default function Home() {
                     fontWeight: 500,
                   }}
                 >
-                  Change name
+                  Logout
                 </button>
               </>
             )}
