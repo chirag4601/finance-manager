@@ -76,29 +76,16 @@ export default function AddExpensePanel({
   } | null>(null);
   const isMobile = useIsMobile();
   const descriptionBeforeDictation = useRef("");
-  const dateInputRef = useRef<HTMLInputElement | null>(null);
 
-  const openDatePicker = () => {
-    const el = dateInputRef.current;
-    if (!el) return;
+  const dismissKeyboardBeforeDatePick = () => {
     const active = document.activeElement as HTMLElement | null;
-    if (active && active !== el && typeof active.blur === "function") {
+    if (
+      active &&
+      (active.tagName === "INPUT" || active.tagName === "TEXTAREA") &&
+      typeof active.blur === "function"
+    ) {
       active.blur();
     }
-    const showPicker = (
-      el as HTMLInputElement & { showPicker?: () => void }
-    ).showPicker;
-    const open = () => {
-      if (typeof showPicker === "function") {
-        try {
-          showPicker.call(el);
-          return;
-        } catch {}
-      }
-      el.focus();
-      el.click();
-    };
-    setTimeout(open, 50);
   };
 
   const {
@@ -340,63 +327,72 @@ export default function AddExpensePanel({
         </div>
         <div>
           <Label p={p}>Date</Label>
-          <div style={{ position: "relative" }}>
-            <input
-              ref={dateInputRef}
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              tabIndex={-1}
-              aria-hidden="true"
+          <div
+            style={{
+              position: "relative",
+              background: p.surface2,
+              border: `1px solid ${p.border}`,
+              borderRadius: 6,
+              height: 38,
+            }}
+          >
+            {/* Visible label — pointer-events none so clicks pass through to the input */}
+            <span
               style={{
                 position: "absolute",
-                left: 0,
-                bottom: 0,
-                width: 1,
-                height: 1,
-                opacity: 0,
-                border: "none",
-                pointerEvents: "none",
-              }}
-            />
-            <button
-              type="button"
-              onClick={openDatePicker}
-              style={{
-                width: "100%",
-                padding: "9px 10px",
-                paddingRight: date ? 54 : 10,
-                background: p.surface2,
-                border: `1px solid ${p.border}`,
-                borderRadius: 6,
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
                 fontSize: 13,
                 color: date ? p.fg : p.muted,
                 fontFamily: "Inter, sans-serif",
-                outline: "none",
-                boxSizing: "border-box",
-                cursor: "pointer",
-                textAlign: "left",
+                pointerEvents: "none",
               }}
             >
               {date ? formatDateLabel(date) : "Today"}
-            </button>
+            </span>
+            {/* Native input fills the box; transparent so our label shows through */}
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              onPointerDown={dismissKeyboardBeforeDatePick}
+              aria-label="Pick a date"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                padding: "0 10px",
+                paddingRight: date ? 54 : 10,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: "transparent",
+                fontSize: 13,
+                fontFamily: "Inter, sans-serif",
+                cursor: "pointer",
+                colorScheme: theme,
+              }}
+            />
             {date && (
               <button
                 type="button"
                 onClick={() => setDate("")}
                 style={{
                   position: "absolute",
-                  right: 6,
+                  right: 4,
                   top: "50%",
                   transform: "translateY(-50%)",
                   padding: "4px 8px",
-                  background: "transparent",
+                  background: p.surface2,
                   border: "none",
                   fontSize: 11,
                   color: p.muted,
                   textTransform: "uppercase",
                   letterSpacing: "0.06em",
                   cursor: "pointer",
+                  borderRadius: 4,
                 }}
               >
                 Clear

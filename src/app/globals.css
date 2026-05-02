@@ -54,3 +54,16 @@ body {
 .dark ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.18);
 }
+
+/* Hide native decorations on transparent date inputs so our custom label shows through */
+input[type="date"]::-webkit-date-and-time-value {
+  color: transparent;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-clear-button,
+input[type="date"]::-webkit-inner-spin-button {
+  display: none;
+}
