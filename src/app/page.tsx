@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { endOfMonth } from "date-fns";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 
 import UsernameModal from "@/components/UsernameModal";
 import DateFilter from "@/components/DateFilter";
@@ -93,8 +93,12 @@ export default function Home() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() =>
+    format(startOfMonth(new Date()), "yyyy-MM-dd"),
+  );
+  const [endDate, setEndDate] = useState(() =>
+    format(endOfMonth(new Date()), "yyyy-MM-dd"),
+  );
   const [rangeEnd, setRangeEnd] = useState<Date>(endOfMonth(new Date()));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -274,7 +278,7 @@ export default function Home() {
                 marginBottom: 8,
               }}
             >
-              Ledger · {today} · {username}
+              Ledger · {today}
             </div>
             <h1
               style={{
